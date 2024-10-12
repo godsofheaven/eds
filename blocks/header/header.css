@@ -51,7 +51,7 @@ header nav p {
 }
 
 header nav a:any-link {
-  color: currentColor;
+  color: currentcolor;
 }
 
 header nav a:hover {

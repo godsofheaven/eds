@@ -54,10 +54,12 @@ function embedVimeo(url, autoplay, background) {
   return temp.children.item(0);
 }
 
-function getVideoElement(source, autoplay, background) {
+function getVideoElement(source, autoplay, background, startTime) {
   const video = document.createElement('video');
   video.setAttribute('controls', '');
   if (autoplay) video.setAttribute('autoplay', '');
+  
+  // Set up background video properties
   if (background) {
     video.setAttribute('loop', '');
     video.setAttribute('playsinline', '');
@@ -68,15 +70,49 @@ function getVideoElement(source, autoplay, background) {
     });
   }
 
+  // Create the form element
+  const form = document.createElement('div');
+  form.innerHTML = `
+    <form id="videoForm" class="email-form" style="display: none; position: absolute; top: 10%; left: 10%;">
+      <label for="email">Enter your email:</label>
+      <input type="email" id="email" name="email" required>
+      <button type="submit">Submit</button>
+    </form>
+  `;
+  
+  // Add logic to show the form starting at the specified startTime
+  video.addEventListener('timeupdate', () => {
+    const currentTime = video.currentTime;
+    if (currentTime >= startTime) {
+      form.querySelector('form').style.display = 'block';  // Show form when video time is past startTime
+    }
+  });
+
+  // Add form submission handler
+  form.querySelector('form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = form.querySelector('#email').value;
+    console.log('Email submitted:', email);
+
+    // Optionally hide form after submission
+    form.querySelector('form').style.display = 'none';
+  });
+
+  // Create and append video source
   const sourceEl = document.createElement('source');
   sourceEl.setAttribute('src', source);
   sourceEl.setAttribute('type', `video/${source.split('.').pop()}`);
   video.append(sourceEl);
 
-  return video;
+  // Wrap the video and form in a container to position form over video
+  const container = document.createElement('div');
+  container.style.position = 'relative';
+  container.append(video, form);
+
+  return container;
 }
 
-const loadVideoEmbed = (block, link, autoplay, background) => {
+const loadVideoEmbed = (block, link, autoplay, background, timeRange) => {
   if (block.dataset.embedLoaded === 'true') {
     return;
   }
@@ -98,7 +134,7 @@ const loadVideoEmbed = (block, link, autoplay, background) => {
       block.dataset.embedLoaded = true;
     });
   } else {
-    const videoEl = getVideoElement(link, autoplay, background);
+    const videoEl = getVideoElement(link, autoplay, background, timeRange);
     block.append(videoEl);
     videoEl.addEventListener('canplay', () => {
       block.dataset.embedLoaded = true;
@@ -109,6 +145,7 @@ const loadVideoEmbed = (block, link, autoplay, background) => {
 export default async function decorate(block) {
   const placeholder = block.querySelector('picture');
   const link = block.querySelector('a').href;
+  const timeRange = parseInt(block.querySelectorAll('p')[1].innerHTML, 10);
   block.textContent = '';
   block.dataset.embedLoaded = false;
 
@@ -137,7 +174,7 @@ export default async function decorate(block) {
       if (entries.some((e) => e.isIntersecting)) {
         observer.disconnect();
         const playOnLoad = autoplay && !prefersReducedMotion.matches;
-        loadVideoEmbed(block, link, playOnLoad, autoplay);
+        loadVideoEmbed(block, link, playOnLoad, autoplay, timeRange);
       }
     });
     observer.observe(block);

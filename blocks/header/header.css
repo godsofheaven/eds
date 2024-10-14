@@ -59,6 +59,11 @@ header nav a:hover {
   text-decoration: none;
 }
 
+header nav a:hover {
+  color: crimson;
+  text-decoration: none;
+}
+
 /* hamburger */
 header nav .nav-hamburger {
   grid-area: hamburger;

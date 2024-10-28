@@ -4,6 +4,10 @@
     max-width: 900px;
     margin: 24px auto;
   }
+
+  .red-button{
+    background-color: crimson;
+  }
   
   .video[data-embed-loaded='false']:not(.placeholder) {
     /* reserve an approximate space to avoid extensive layout shifts */
@@ -69,6 +73,7 @@
     top: 50%;
     left: calc(50% + 2px);
     transform: translate(-50%, -50%);
+  }
 
 .video {
     text-align: center;
@@ -140,4 +145,79 @@
     top: 50%;
     left: calc(50% + 2px);
     transform: translate(-50%, -50%);
+  }
+
+  .shopping-button{
+    border-radius: 50%;
+    position: absolute;
+    /*right: 50px;*/
+  }
+
+  .modal {
+    display: none; /* Hidden by default */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .modal-content {
+    background-color: white;
+    display: flex;
+    padding: 20px;
+    width: 80%;
+    max-width: 600px;
+    border-radius: 8px;
+    position: relative;
+    top: 50px;
+    left: 100px;
+  }
+  
+  /* Left Side - Product Image */
+  .modal-left img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 5px;
+  }
+  
+  /* Right Side - Buttons */
+  .modal-right {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin-left: 20px;
+  }
+  
+  .modal-button {
+    margin: 10px 0;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+  }
+  
+  .add-to-cart {
+    background-color: #333;
+    color: white;
+  }
+  
+  .buy-now {
+    background-color: #333;
+    color: white;
+  }
+  
+  /* Close Button */
+  .close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #333;
   }

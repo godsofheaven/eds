@@ -1,9 +1,3 @@
-/*
- * Video Block
- * Show a video referenced by a link
- * https://www.hlx.live/developer/block-collection/video
- */
-
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 function embedYoutube(url, autoplay, background) {
@@ -54,7 +48,7 @@ function embedVimeo(url, autoplay, background) {
   return temp.children.item(0);
 }
 
-function getVideoElement(source, autoplay, background, startTime) {
+function getVideoElement(source, autoplay, background) {
   const video = document.createElement('video');
   video.setAttribute('controls', '');
   if (autoplay) video.setAttribute('autoplay', '');
@@ -70,32 +64,147 @@ function getVideoElement(source, autoplay, background, startTime) {
     });
   }
 
-  // Create the form element
-  const form = document.createElement('div');
-  form.innerHTML = `
-    <form id="videoForm" class="email-form" style="display: none; position: absolute; top: 10%; left: 10%;">
-      <label for="email">Enter your email:</label>
-      <input type="email" id="email" name="email" required>
-      <button type="submit">Submit</button>
-    </form>
-  `;
-  
-  // Add logic to show the form starting at the specified startTime
-  video.addEventListener('timeupdate', () => {
-    const currentTime = video.currentTime;
-    if (currentTime >= startTime) {
-      form.querySelector('form').style.display = 'block';  // Show form when video time is past startTime
+  // Create the hotspot element
+  const hotspotContainer = document.createElement('div');
+  hotspotContainer.classList.add('hotspot-container');
+
+  // Create the html element
+  const modalContainer = document.createElement('div');
+  modalContainer.classList.add('modal-container');
+
+let timePositionData = {};
+let activeButtons = new Set();
+let idSet = new Set();
+
+// Fetch JSON from URL
+fetch("http://localhost:3000/hotspot.json")
+  .then(response => response.json())
+  .then(data => {
+    timePositionData = data.data; // Store the fetched JSON data in timePositionData
+    console.log("Data loaded:", timePositionData); // Optional: Log the data to verify
+  })
+  .catch(error => {
+    console.error("Error fetching data:", error);
+  });
+
+  function showButtonAtPosition(item) {
+    const positions = item.Position.split(',');
+    const image = item.image;
+    for(let position of positions)
+    {
+      const id = `${item.Time}/${position}`;
+      if(!idSet.has(id))
+      {
+        const hotspotButton = document.createElement('button');
+        hotspotButton.classList.add('shopping-button');
+        hotspotButton.dataset.id = id;
+        const shopIcon = document.createElement('i');
+        shopIcon.classList.add('fas', 'fa-shopping-bag');
+        hotspotButton.appendChild(shopIcon);
+        hotspotContainer.appendChild(hotspotButton);
+
+        const positionValues = position.split(';');
+        for(const position of positionValues)
+        {
+          const [property, value] = position.split(":");
+          hotspotButton.style[property.trim()] = value.trim();
+          console.log(`Showing button at ${value} from ${property}`);
+        }
+        activeButtons.add(hotspotButton);
+        idSet.add(id);
+
+        // Display the modal and pause the video
+        const modal = document.createElement('div');
+        modal.classList.add('modal');
+        modal.setAttribute('id','productModal');
+        modal.dataset.id = `modal-${id}`;
+        modal.innerHTML = `<div class="modal-content" style="top: 15%; left: 30%;">
+          <div class="modal-left">
+            <img src="https://main--eds--godsofheaven.aem.page/assets/media_18b0792fc3c73bf03959982a57d12507bc56093a9.jpeg" alt="Product Image">
+          </div>
+          <div class="modal-right">
+            <p> Modular Bed Architecture Set: Limited Time Sale</p>
+            <h2> $150 </h2>
+            <button class="modal-button add-to-cart" onclick="cartAdd(this)">Add to Cart</button>
+            <button class="modal-button buy-now">Buy Now</button>
+          </div>
+          <span class="close">&times;</span>
+          </div>
+          `;
+        modal.querySelector('img').setAttribute('src',item.Image);
+        modalContainer.appendChild(modal);
+      }
     }
+  }
+
+  function cartAdd(e){
+    e.innerHTML = `Added to cart`;
+  }
+  
+  // Function to hide the button
+  function hideButton(currentTime) {
+    const activeButtonElements = hotspotContainer.querySelectorAll(".shopping-button");
+
+    activeButtonElements.forEach((button) => {
+      const id = button.dataset.id;
+      const timeRange = id.split('/')[0].split('-');
+      if (timeRange && (currentTime < timeRange[0] || currentTime > timeRange[1])) {
+        button.remove(); // Remove button from DOM
+        activeButtons.delete(button);
+        idSet.delete(id); // Remove from active tracking
+      }
+    });
+  }
+
+  // Add logic to show the form starting at the specified startTime
+  video.addEventListener("timeupdate", () => {
+    const currentTime = video.currentTime;
+    hideButton(currentTime);
+    // Hide button initially
+    let buttonVisible = false;
+  
+    // Loop through the time ranges in the JSON
+    for (const item of timePositionData) {
+      const [start, end] = item.Time.split("-").map(Number);
+      
+      if (currentTime >= start && currentTime <= end) {
+        const positions = item.Position.split(',');
+        // Show the button at specified position and set the image
+        showButtonAtPosition(item);
+        buttonVisible = true;
+        break;
+      }
+    }
+  
+    // If no time range matches, hide the button
+    if (!buttonVisible) hideButton();
   });
 
   // Add form submission handler
-  form.querySelector('form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const email = form.querySelector('#email').value;
-    console.log('Email submitted:', email);
+  hotspotContainer.addEventListener("click", (e) => {
+    // Check if the clicked element has the 'shopping-button' class
+    if (e.target.classList.contains("shopping-button")) {
+      e.preventDefault();
+      const id = e.target.dataset.id;
+      video.pause();
+      const activeModals = modalContainer.querySelectorAll('.modal');
+      activeModals.forEach((modal) =>{
+        const buttonId = modal.dataset.id.replace(/^modal-/, "");
+        if(buttonId === id)
+        {
+          modal.style.display = 'block';
+        }
+      })
+    }
+  });
 
-    // Optionally hide form after submission
-    form.querySelector('form').style.display = 'none';
+  modalContainer.addEventListener("click", (e) => {
+    // Check if the clicked element has the 'productModal' id
+    if (e.target.classList.contains("close")) {
+      e.preventDefault();
+      e.target.parentElement.parentElement.style.display = 'none';
+      video.play();
+    }
   });
 
   // Create and append video source
@@ -104,15 +213,16 @@ function getVideoElement(source, autoplay, background, startTime) {
   sourceEl.setAttribute('type', `video/${source.split('.').pop()}`);
   video.append(sourceEl);
 
-  // Wrap the video and form in a container to position form over video
+  // Wrap the video and hotspot in a container to position form over video
   const container = document.createElement('div');
   container.style.position = 'relative';
-  container.append(video, form);
+  container.append(video, hotspotContainer);
+  container.append(hotspotContainer, modalContainer);
 
   return container;
 }
 
-const loadVideoEmbed = (block, link, autoplay, background, timeRange) => {
+const loadVideoEmbed = (block, link, autoplay, background) => {
   if (block.dataset.embedLoaded === 'true') {
     return;
   }
@@ -134,7 +244,7 @@ const loadVideoEmbed = (block, link, autoplay, background, timeRange) => {
       block.dataset.embedLoaded = true;
     });
   } else {
-    const videoEl = getVideoElement(link, autoplay, background, timeRange);
+    const videoEl = getVideoElement(link, autoplay, background);
     block.append(videoEl);
     videoEl.addEventListener('canplay', () => {
       block.dataset.embedLoaded = true;
@@ -143,9 +253,12 @@ const loadVideoEmbed = (block, link, autoplay, background, timeRange) => {
 };
 
 export default async function decorate(block) {
+  const fontAwesome = document.createElement("link");
+  fontAwesome.rel = "stylesheet";
+  fontAwesome.href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css";
+  document.head.appendChild(fontAwesome);
   const placeholder = block.querySelector('picture');
   const link = block.querySelector('a').href;
-  const timeRange = parseInt(block.querySelectorAll('p')[1].innerHTML, 10);
   block.textContent = '';
   block.dataset.embedLoaded = false;
 
@@ -174,7 +287,7 @@ export default async function decorate(block) {
       if (entries.some((e) => e.isIntersecting)) {
         observer.disconnect();
         const playOnLoad = autoplay && !prefersReducedMotion.matches;
-        loadVideoEmbed(block, link, playOnLoad, autoplay, timeRange);
+        loadVideoEmbed(block, link, playOnLoad, autoplay);
       }
     });
     observer.observe(block);

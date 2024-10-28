@@ -48,7 +48,7 @@ function embedVimeo(url, autoplay, background) {
   return temp.children.item(0);
 }
 
-function getVideoElement(source, autoplay, background) {
+function getVideoElement(source, autoplay, background, timeRange) {
   const video = document.createElement('video');
   video.setAttribute('controls', '');
   if (autoplay) video.setAttribute('autoplay', '');
@@ -71,6 +71,11 @@ function getVideoElement(source, autoplay, background) {
   // Create the html element
   const modalContainer = document.createElement('div');
   modalContainer.classList.add('modal-container');
+
+  const revealButton = document.createElement('button');
+  revealButton.setAttribute('id','revealButton');
+  revealButton.setAttribute('style','display:none;');
+  revealButton.innerHTML=`Show Referral Code`;
 
 let timePositionData = {};
 let activeButtons = new Set();
@@ -123,7 +128,7 @@ fetch("http://localhost:3000/hotspot.json")
             <img src="https://main--eds--godsofheaven.aem.page/assets/media_18b0792fc3c73bf03959982a57d12507bc56093a9.jpeg" alt="Product Image">
           </div>
           <div class="modal-right">
-            <p> Modular Bed Architecture Set: Limited Time Sale</p>
+            <p class="product-text"> Modular Bed Architecture Set: Limited Time Sale</p>
             <h2> $150 </h2>
             <button class="modal-button add-to-cart" onclick="cartAdd(this)">Add to Cart</button>
             <button class="modal-button buy-now">Buy Now</button>
@@ -132,6 +137,8 @@ fetch("http://localhost:3000/hotspot.json")
           </div>
           `;
         modal.querySelector('img').setAttribute('src',item.Image);
+        modal.querySelector('.product-text').innerHTML = item.Description;
+        modal.querySelector('h2').innerHTML = item.Price;
         modalContainer.appendChild(modal);
       }
     }
@@ -155,13 +162,20 @@ fetch("http://localhost:3000/hotspot.json")
       }
     });
   }
-
+  let referralAdded = false;
   // Add logic to show the form starting at the specified startTime
   video.addEventListener("timeupdate", () => {
     const currentTime = video.currentTime;
     hideButton(currentTime);
     // Hide button initially
     let buttonVisible = false;
+    if (currentTime >= timeRange[0] && currentTime <= timeRange[1]) {
+      revealButton.setAttribute('style','display:block');
+      referralAdded = true;
+    }
+    else{
+      revealButton.setAttribute('style','display:none');
+    }
   
     // Loop through the time ranges in the JSON
     for (const item of timePositionData) {
@@ -207,6 +221,11 @@ fetch("http://localhost:3000/hotspot.json")
     }
   });
 
+  revealButton.addEventListener("click", (e) => {
+    revealButton.innerHTML=`<span id="code">ABC123XYZ</span>
+    <i class="fa-solid fa-copy"></i>`;
+  });
+
   // Create and append video source
   const sourceEl = document.createElement('source');
   sourceEl.setAttribute('src', source);
@@ -218,11 +237,11 @@ fetch("http://localhost:3000/hotspot.json")
   container.style.position = 'relative';
   container.append(video, hotspotContainer);
   container.append(hotspotContainer, modalContainer);
-
+  container.append(modalContainer, revealButton);
   return container;
 }
 
-const loadVideoEmbed = (block, link, autoplay, background) => {
+const loadVideoEmbed = (block, link, autoplay, background, timeRange) => {
   if (block.dataset.embedLoaded === 'true') {
     return;
   }
@@ -244,7 +263,7 @@ const loadVideoEmbed = (block, link, autoplay, background) => {
       block.dataset.embedLoaded = true;
     });
   } else {
-    const videoEl = getVideoElement(link, autoplay, background);
+    const videoEl = getVideoElement(link, autoplay, background, timeRange);
     block.append(videoEl);
     videoEl.addEventListener('canplay', () => {
       block.dataset.embedLoaded = true;
@@ -259,6 +278,7 @@ export default async function decorate(block) {
   document.head.appendChild(fontAwesome);
   const placeholder = block.querySelector('picture');
   const link = block.querySelector('a').href;
+  const timeRange = block.querySelectorAll('p')[1].innerHTML.split('-')
   block.textContent = '';
   block.dataset.embedLoaded = false;
 
@@ -276,7 +296,7 @@ export default async function decorate(block) {
       );
       wrapper.addEventListener('click', () => {
         wrapper.remove();
-        loadVideoEmbed(block, link, true, false);
+        loadVideoEmbed(block, link, true, false, timeRange);
       });
     }
     block.append(wrapper);
@@ -287,7 +307,7 @@ export default async function decorate(block) {
       if (entries.some((e) => e.isIntersecting)) {
         observer.disconnect();
         const playOnLoad = autoplay && !prefersReducedMotion.matches;
-        loadVideoEmbed(block, link, playOnLoad, autoplay);
+        loadVideoEmbed(block, link, playOnLoad, autoplay, timeRange);
       }
     });
     observer.observe(block);

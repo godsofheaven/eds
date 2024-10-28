@@ -5,6 +5,12 @@
     margin: 24px auto;
   }
 
+  #revealButton{
+    position: absolute;
+    right: 151px;
+    top: 76%;
+  }
+
   .red-button{
     background-color: crimson;
   }
@@ -220,18 +226,4 @@
     font-size: 24px;
     cursor: pointer;
     color: #333;
-  }
-
-  #referralCode {
-    display: none;
-    margin-top: 10px;
-    font-weight: bold;
-    color: #4CAF50;
-  }
-
-  .copy-icon {
-    cursor: pointer;
-    margin-left: 10px;
-    font-size: 18px;
-    color: #4CAF50;
   }

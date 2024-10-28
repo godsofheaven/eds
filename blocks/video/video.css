@@ -221,3 +221,17 @@
     cursor: pointer;
     color: #333;
   }
+
+  #referralCode {
+    display: none;
+    margin-top: 10px;
+    font-weight: bold;
+    color: #4CAF50;
+  }
+
+  .copy-icon {
+    cursor: pointer;
+    margin-left: 10px;
+    font-size: 18px;
+    color: #4CAF50;
+  }
